@@ -8,8 +8,12 @@
 #define _LOG_MGR_
 
 typedef enum {INFO, WARNING, FATAL} Levels;
+const char* enumString[] = { "INFO", "WARNING", "FATAL" };
 
 char *logfile = "./logfile";
+int fd;
+char buffer[256];
+int bytesWritten;
 
 /*
    * LOG_EVENT
