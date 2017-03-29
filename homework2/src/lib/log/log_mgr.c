@@ -36,7 +36,7 @@ int log_event(Levels I, const char *fmt, ...)
                 exit(EXIT_FAILURE);
         }
 
-        c_time_string = ctime(&current_time);
+        char* c_time_string = ctime(&current_time);
 
         if (c_time_string == NULL)
         {
@@ -63,7 +63,7 @@ int log_event(Levels I, const char *fmt, ...)
    *
    * @return    int    OK (0) upon successful return and ERROR (-1) otherwise
    */
-int set_logfile(const char* logfile_name);
+int set_logfile(const char* logfile_name)
 {
         if (strcmp(logfile_name, logfile) == 0)
         {
@@ -71,7 +71,7 @@ int set_logfile(const char* logfile_name);
         }
         else
         {
-                int tmpFD
+                int tmpFD;
                 if ((tmpFD = open (logfile_name, O_CREAT | O_WRONLY | O_APPEND, 0600)) > 0)
                 {
                         logfile = logfile_name;
@@ -80,7 +80,7 @@ int set_logfile(const char* logfile_name);
                 }
                 else
                 {
-                        printf ("%s: cannot open or create %s for appending(%d)\n", argv[0], logfile, getpid());
+                        printf ("Cannot open or create %s for appending(pid:%d)\n", logfile, getpid());
                         exit (1);
                 }
 
@@ -95,7 +95,7 @@ int set_logfile(const char* logfile_name);
          * @return
          *
          */
-void close_logfile(void);
+void close_logfile(void)
 {
         close(fd);
         printf("Logfile %s closed", logfile);
