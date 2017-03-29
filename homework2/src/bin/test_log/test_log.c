@@ -7,7 +7,13 @@ main()
 	int i;
 	float z = 0.5;
 
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < 50; i++)
+	{
+		log_event (INFO, "[%d]", i);
+	}
+
+    /*
+	for (i = 0; i < 50000; i++)
 	{
 		log_event (INFO, "[%d]This is test %d for %f", getpid(), i, z);
 		z = z * 0.98;
@@ -24,6 +30,7 @@ main()
 	set_logfile ("LOGwarnlog");
 	for (i = 0; i < 5; i++)
 		log_event (WARNING, "[%d]%c%c%c%c", getpid(), 't', 'e', 's', 't');
+        */
 	close_logfile();
 	exit (0);
 }

@@ -1,21 +1,26 @@
-OBJS	= test_log.o
-OBJS2	= test_log2.o
-LLOBJS	= lots_of_logs.o
-LIBDIR	= .
-CFLAGS	= -Ilog_lib
-CC	= gcc
-LIBS	= liblog_mgr.a
+# Brandon Tarney 
+# 02/2017
+PROJECT_ROOT	= ../../..
+LIBDIR		= $(PROJECT_ROOT)/lib
 
-all: test_log test_log2 lots_of_logs
+# INDIVIDUAL PROGRAM MODIFICATIONS SHOULD BEGIN HERE
 
-test_log: $(OBJS) $(LIBS)
-	$(CC) $(OBJS) -L$(LIBDIR) -llog_mgr -o $@
+# Program to make (binary)
+EXECUTABLE	= test_log
+# Source files for EXECUTABLE 
+SRC	= test_log.c
 
-test_log2: $(OBJS2) $(LIBS)
-	$(CC) $(OBJS2) -L$(LIBDIR) -llog_mgr -o $@
+# LIBS needed to compile the EXECUTABLE (eg: /usr/local/lib/libspecial.a)
+# use $(LIBDIR) defined above if appropriate
+LIBS	= $(LIBDIR)/liblog_mgr.a
 
-lots_of_logs: $(LLOBJS) $(LIBS)
-	$(CC) $(LLOBJS) -L$(LIBDIR) -llog_mgr -o $@
+# How they are invoked on the compile line (eg: -lspecial)
+LLIBS	= -llog_mgr
 
-clean:
-	rm -f $(OBJS) $(OBJS2) $(LLOBJS) test_log test_log2 lots_of_logs
+# Local additions for CFLAG options
+LOCAL_CFLAGS	= -g
+
+# *******************************************************
+# THE REST OF THE MAKEFILE SHOULD NOT NEED TO BE MODIFIED
+# (EXCEPT BY THE PROJECT SOFTWARE DEVELOPMENT MANAGER)
+include ../../../Make_templates/Make.bin

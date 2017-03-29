@@ -1,0 +1,10 @@
+
+test_log.o: test_log.c /usr/include/unistd.h \
+  /usr/include/sys/feature_tests.h /usr/include/sys/ccompile.h \
+  /usr/include/sys/isa_defs.h /usr/include/sys/types.h \
+  /usr/include/sys/machtypes.h /usr/include/sys/int_types.h \
+  /usr/include/sys/select.h /usr/include/sys/time_impl.h \
+  /usr/include/sys/time.h /usr/include/time.h /usr/include/iso/time_iso.h \
+  /usr/include/sys/unistd.h /usr/include/stdlib.h \
+  /usr/include/iso/stdlib_iso.h /usr/include/iso/stdlib_c99.h \
+  ../../../include/log_mgr.h
