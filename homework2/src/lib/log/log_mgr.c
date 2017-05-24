@@ -1,102 +1,152 @@
-/*
-   * Library to handle Logging
-   *
-   * @author brandon tarney
-   * @date  3/17/2017
-   */
-#include <sys/file.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+// 
+// homework 3, Unix Systems Programming
+// Fall 2013
+//
+// file: log_mgr.c
+// This file gets built as liblog_mgr.a
+// log manager is a utility to write messages to a log file.  Messages
+// are tagged with the date and a severity level.  The date is formated
+// as follows: day of week, month, day of month, HH:MM:SS, year, time zone.
+// After the date, the level is printed: Info, Warning, or Fatal.  Finally
+// the log message is printed.  A new line is always printed last.  
+// If the last character of the message is a newline, it will be stripped
+// to prevent an unnecessary double new line.  For a description of the
+// public functions, see the header file, log_mgr.h
 
+#include <sys/file.h>
+#include <sys/fcntl.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <strings.h>
 #include "log_mgr.h"
 
+static const char* INFO_STR        = "Info   ";
+static const char* WARNING_STR     = "Warning";
+static const char* FATAL_STR       = "Fatal  ";
 
-/*
-   * LOG_EVENT
-   * <p>Take the argument information, format it into a time-tagged line of text, and append it to the current log file.<p>
-   * <p>No text msgs should appear garbled or lost in the log_file, regardless of # of proc. running & logging.<p>
-   *
-   * @param     I       Log leve
-   * @param     fmt     character pointer to a string containing a format specfication for hte log messages. This format string is similar in funciton to the format string in the prinf() familiy of standard output routines
-   * @param     ...    parameters of varying types and count (argument list) use vsprintf() function which takes a variable of type va_list as its last argument 
-   *
-   * @return    int    OK (0) upon successful return and ERROR (-1) otherwise
-   */
-int log_event(Levels I, const char *fmt, ...)
+static int Fd = -1;    //file descriptor for the logfile
+
+//time format:
+//day of week, month, day of month, HH:MM:SS, year, time zone
+//
+#define DATE_TIME_FORMAT  "%a %b %d %k:%M:%S %G %Z" 
+
+//set reasonable maximum lengths for the strings:
+#define MAX_TIME_STR_LEN  40
+#define MAX_USER_STR_LEN  256
+#define MAX_TOTAL_LEN     MAX_TIME_STR_LEN + MAX_USER_STR_LEN + 9
+
+// debugging support:
+// instead of using printf for debugging, i wrote a wrapper
+// function for printf called debug.  this lets me turn on or
+// turn off debug printing easily. simply uncomment the define.
+//
+void debug ( const char *fmt, ... );
+//#define DEBUG_ON
+
+int log_event ( Levels l, const char *fmt, ... )
 {
-        //format = <date & time>:<Level>:<Formatted line of text>\n
-        time_t current_time =time(NULL);
-        if(current_time == ((time_t)-1))
-        {
-                printf("Bad Read Time");
-                exit(EXIT_FAILURE);
-        }
-
-        char* c_time_string = ctime(&current_time);
-
-        if (c_time_string == NULL)
-        {
-                printf("Bad Time String");
-                exit(EXIT_FAILURE);
-        }
-
-		sprintf (buffer, "<%s>:<%s>:<%s>\n",
-                        c_time_string,
-                        enumString[I],
-                        fmt);
-
-		bytesWritten = write (fd, buffer, strlen(buffer));
-        return bytesWritten;
+	va_list     ap;
+	char        dt_str[MAX_TIME_STR_LEN];
+	const char* level_str;
+	char        user_str[MAX_USER_STR_LEN];
+	char        log_str[MAX_TOTAL_LEN];
+	time_t      the_time;
+	struct tm   time_struct;
+	int         open_result;
+	
+	va_start(ap, fmt); //init the vararg list
+	
+	//check if file is valid	
+	if (Fd < 0)
+	{
+		//file not valid, open default
+		open_result = set_logfile(DEFAULT_LOGFILE);
+		if(open_result != OK)
+			return ERROR; //could not open!
+	}
+	
+	//build the date time string
+	the_time = time(NULL);
+	localtime_r(&the_time, &time_struct);
+	strftime(dt_str, MAX_TIME_STR_LEN, DATE_TIME_FORMAT, &time_struct);
+	
+	//build the level string
+	switch(l)
+	{
+		case(INFO):
+			level_str = INFO_STR;
+			break;
+		case(WARNING):
+			level_str = WARNING_STR;
+			break;
+		default:   //(FATAL):
+			level_str = FATAL_STR;
+			break;
+	}
+		
+	//build user_string
+	vsnprintf(user_str, MAX_USER_STR_LEN, fmt, ap);
+	if(user_str[strlen(user_str)-1] == '\n')   //strip off trailing newline
+		user_str[strlen(user_str)-1] = '\0';
+	
+	//build combined string for log entry
+	snprintf(log_str, MAX_TOTAL_LEN, "<%s>:<%s>:<%s>\n", dt_str, level_str, user_str);
+	//should the angle braces be printed literally?  it is not clear to me from the assignment
+	
+	//write combined string to log
+	write (Fd, log_str, strlen(log_str));	
 }
 
-/*
-   * SET_LOGFILE
-   * <p>Allows the user to change th file used for the logging of messages for a particular process.<p>
-   * <p>Not required to call this fcn before log_event()<p>
-   * <p>When called, file is opened (or created), if success prev. logfile closed, new file used for log_event()<p>
-   *
-   * @param     logfile_name    name of file to open or create
-   *
-   * @return    int    OK (0) upon successful return and ERROR (-1) otherwise
-   */
-int set_logfile(const char* logfile_name)
+int set_logfile ( const char *logfile_name )
 {
-        if (strcmp(logfile_name, logfile) == 0)
-        {
-                printf("Logfile already open");
-        }
-        else
-        {
-                int tmpFD;
-                if ((tmpFD = open (logfile_name, O_CREAT | O_WRONLY | O_APPEND, 0600)) > 0)
-                {
-                        logfile = logfile_name;
-                        close_logfile();
-                        fd = tmpFD;
-                }
-                else
-                {
-                        printf ("Cannot open or create %s for appending(pid:%d)\n", logfile, getpid());
-                        exit (1);
-                }
-
-        }
+	debug ("set_logfile(%s)\n",logfile_name);
+	
+	//  if file already open, close it!
+	if (Fd >= 0)
+	{
+		debug ("closing previous file\n");
+		close (Fd);  //alternativly, we could call our close_logfile routine
+	}
+		
+	//ok, now open new file	
+	Fd = open (logfile_name, O_CREAT | O_WRONLY | O_APPEND, 0600);
+	
+	//error check
+	if (Fd < 0)
+	{
+		debug ("error, unable to open file\n");
+		return ERROR;
+	}
+	
+	return OK;
 }
 
-/*
- * CLOSE_LOGFILE
- * <p>Called whenever a logfile is to be closed. At a minimum this function should close the FD associated w/ open logfile.<p>
- *
-         * @param
-         * @return
-         *
-         */
-void close_logfile(void)
+void close_logfile ( void )
 {
-        close(fd);
-        printf("Logfile %s closed", logfile);
+	if (Fd >= 0)
+	{
+		debug ("closing file\n");
+		close (Fd);
+		Fd = -1;                  //mark descriptor as invalid so we dont try to use it!
+	}
+	else
+	{
+		debug ("no file is open, nothing to close\n");
+	}
 }
+
+
+void debug ( const char *fmt, ... )
+{
+	#ifdef DEBUG_ON
+	  va_list     ap;
+	  va_start(ap, fmt); //init the vararg list
+	  vprintf(fmt, ap);
+	#endif
+}
+
+

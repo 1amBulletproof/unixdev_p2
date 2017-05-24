@@ -11,7 +11,7 @@
 # 
 
 # Library to make (eg: libeg.a)
-LIBRARY = log_mgr.a 
+LIBRARY = liblog_mgr.a 
 
 
 # Source files for LIBRARY routines
